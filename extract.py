@@ -1,78 +1,122 @@
 import os
 import pprint
+import sys
 
-import pdfquery
+from pdfquery import PDFQuery
 from pdfquery.cache import FileCache
 from pdfminer.pdfinterp import resolve1
 
-def main():
-    cache_dir = "./.cache/"
+class Point(object):
+    def __init__(self, x: float = 0, y: float = 0):
+        self.data: [float, float] = [x, y]
 
+    def __str__(self) -> str:
+        return "point(%s,%s)" % (self.x, self.y)
+
+    def __getitem__(self, item) -> float:
+        return self.data[item]
+
+    def __setitem__(self, idx: int, value: float):
+        self.data[idx] = value
+
+    @property
+    def x(self) -> float:
+        return self.data[0]
+
+    @property
+    def y(self) -> float:
+        return self.data[1]
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+def load_pdf(file: str, cache_dir: str = "./.cache/") -> PDFQuery:
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
 
-    pdf = pdfquery.PDFQuery("./testdata/test.pdf", parse_tree_cacher=FileCache(cache_dir))
+    pdf = PDFQuery("./testdata/test.pdf", parse_tree_cacher=FileCache(cache_dir))
     pdf.load()
+    return pdf
 
-    page_count = resolve1(pdf.doc.catalog['Pages'])['Count']
+def get_page_count(pdf: PDFQuery) -> int:
+    return resolve1(pdf.doc.catalog['Pages'])['Count']
 
+def get_selector_for_element_text(pdf: PDFQuery, descriptor: str, underlaying_descriptor: str, value_deviations: (Point, Point), page: int):
+    """Extracts a text value from the given handbook based on descriptors
+
+    The operation is based on a descriptor of the value to extract and an underlaying descriptor used
+    to calculate the bounding box of the value of interest on the page.
+    You can use value_derivations to adjust the calculated bounding box.
+    ┌────────────────────────┬──────────────────────────┐
+    │ descriptor             │ This is the text we want │
+    ├────────────────────────┼──────────────────────────┤
+    │ underlaying_descriptor │ uninteresting text       │
+    └────────────────────────┴──────────────────────────┘
+    """
+
+    descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, descriptor))
+    if len(descriptor_element) < 1:
+        raise ValueError("Descriptor \"%s\" not found on page %s" % (descriptor, page + 1))
+
+    underlaying_descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, underlaying_descriptor))
+    if len(underlaying_descriptor_element) < 1:
+        raise ValueError("Underlaying descriptor \"%s\" not found on page %s" % (underlaying_descriptor, page + 1))
+
+    value_coords = (
+        Point(
+            float(descriptor_element.attr('x0')) + value_deviations[0].x,
+            float(underlaying_descriptor_element.attr('y1')) + value_deviations[0].y
+        ),
+        Point(
+            float(descriptor_element.attr('x0')) + value_deviations[1].x,
+            float(descriptor_element.attr('y1')) + value_deviations[1].y
+        )
+    )
+    return (descriptor.lower(), 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
+
+def extract_competencies(pdf: PDFQuery):
+    page_count = get_page_count(pdf)
     results = []
 
     for i in range(page_count - 1):
-        # print(i)
-        module_id = pdf.pq('LTPage[page_index="' + str(i) + '"] LTTextLineHorizontal:contains("Modulnummer")')
+        # Limit the extraction to the current page and only extract text
+        selectors = [
+            ('with_parent','LTPage[page_index="%s"]' % (i)),
+            ('with_formatter', 'text'),
+        ]
 
-        # If a module id is found, we are on a module description page :D
-        if len(module_id) >= 1:
-            selectors = [
-                ('with_parent','LTPage[page_index="' + str(i) + '"]'),
-                ('with_formatter', 'text'),
-            ]
-            id_key_coords = {
-                "x0": float(module_id.attr('x0')), "y0": float(module_id.attr('y0')),
-                "x1": float(module_id.attr('x1')), "y1": float(module_id.attr('y1'))}
-            id_value_coords = {
-                "x0": id_key_coords['x0'] + 123, "y0": id_key_coords['y0'],
-                "x1": id_key_coords['x0'] + 450, "y1": id_key_coords['y1']}
+        try:
+            selectors.append(get_selector_for_element_text(pdf, "Modulnummer", "Titel", (Point(120, 0), Point(455, 1)), i))
+        except ValueError as err:
+            print("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
+            continue
 
-            selectors.append(('id', 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (id_value_coords['x0'], id_value_coords['y0'], id_value_coords['x1'], id_value_coords['y1']), lambda match: match.text().strip()))
+        try:
+            selectors.append(get_selector_for_element_text(pdf, "Titel", "Leistungspunkte", (Point(120,0), Point(455,1)), i))
+        except ValueError as err:
+            eprint("Error parsing \"Titel\": %s" % (err))
 
-            name = pdf.pq('LTPage[page_index="' + str(i) + '"] LTTextLineHorizontal:contains("Titel")')
-            if len(name) >= 1:
-                leistungspunkte = pdf.pq('LTPage[page_index="' + str(i) + '"] LTTextLineHorizontal:contains("Leistungspunkte")')
+        try:
+            selectors.append(get_selector_for_element_text(pdf, "Lernziele / Kompetenzen", "Voraussetzungen", (Point(120, 0), Point(455, 1)), i))
+        except ValueError as err:
+            eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
-                if len(leistungspunkte) >= 1:
-                    name_value_coords = {
-                        "x0": float(name.attr('x0')) + 120, "y0": float(leistungspunkte.attr('y1')),
-                        "x1": float(name.attr('x0')) + 455, "y1": float(name.attr('y1')) + 1
-                    }
-                    selectors.append(('name', 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (name_value_coords['x0'], name_value_coords['y0'], name_value_coords['x1'], name_value_coords['y1']), lambda match: match.text().strip()))
+        try:
+            selectors.append(get_selector_for_element_text(pdf, "Voraussetzungen", "Niveaustufe", (Point(120, 0), Point(455, 1)), i))
+        except ValueError as err:
+            eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 
-            competencies = pdf.pq('LTPage[page_index="' + str(i) + '"] LTTextLineHorizontal:contains("Lernziele / Kompetenzen")')
-            if len(competencies) >= 1:
-                requirements = pdf.pq('LTPage[page_index="' + str(i) + '"] LTTextLineHorizontal:contains("Voraussetzungen")')
-                if len(requirements) >= 1:
-                    competencies_value_coords = {
-                        "x0": float(competencies.attr('x0')) + 120, "y0": float(requirements.attr('y1')),
-                        "x1": float(competencies.attr('x0')) + 455, "y1": float(competencies.attr('y1')) + 1
-                    }
-                    selectors.append(('competencies', 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (competencies_value_coords['x0'], competencies_value_coords['y0'], competencies_value_coords['x1'], competencies_value_coords['y1']), lambda match: match.text().strip()))
+        page_results = pdf.extract(selectors)
+        page_results['page'] = i + 1
+        results.append(page_results)
 
-                    niveau = pdf.pq('LTPage[page_index="' + str(i) + '"] LTTextLineHorizontal:contains("Niveaustufe")')
-                    if len(niveau) >= 1:
-                        requirements_value_coords = {
-                            "x0": float(requirements.attr('x0')) + 120, "y0": float(niveau.attr('y1')),
-                            "x1": float(requirements.attr('x0')) + 455, "y1": float(requirements.attr('y1')) + 1
-                        }
-                        selectors.append(('requirements', 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (requirements_value_coords['x0'], requirements_value_coords['y0'], requirements_value_coords['x1'], requirements_value_coords['y1']), lambda match: match.text().strip()))
+    return results
 
-            page_results = pdf.extract(selectors)
-            page_results['page'] = i + 1
-            results.append(page_results)
-
+def main():
+    pdf = load_pdf("./testdata/test.pdf")
+    results = extract_competencies(pdf)
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(results)
-    exit(0)
 
 if __name__ == "__main__":
     main()

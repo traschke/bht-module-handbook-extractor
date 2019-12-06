@@ -1,6 +1,9 @@
 import os
 import pprint
 import sys
+import re
+from pathlib import Path
+from typing import List, Set, Dict, Tuple, Optional
 
 from pdfquery import PDFQuery
 from pdfquery.cache import FileCache
@@ -41,7 +44,7 @@ def load_pdf(file: str, cache_dir: str = "./.cache/") -> PDFQuery:
 def get_page_count(pdf: PDFQuery) -> int:
     return resolve1(pdf.doc.catalog['Pages'])['Count']
 
-def get_selector_for_element_text(pdf: PDFQuery, descriptor: str, underlaying_descriptor: str, value_deviations: (Point, Point), page: int):
+def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptor: str, underlaying_descriptor: str, value_deviations: (Point, Point), desc: Optional[str] = None):
     """Extracts a text value from the given handbook based on descriptors
 
     The operation is based on a descriptor of the value to extract and an underlaying descriptor used
@@ -72,11 +75,13 @@ def get_selector_for_element_text(pdf: PDFQuery, descriptor: str, underlaying_de
             float(descriptor_element.attr('y1')) + value_deviations[1].y
         )
     )
-    return (descriptor.lower(), 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
+    if desc is None:
+        desc = descriptor.lower()
+    return (desc, 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
 
-def extract_competencies(pdf: PDFQuery):
+def extract_competencies(pdf: PDFQuery) -> List[Dict]:
     page_count = get_page_count(pdf)
-    results = []
+    results: List[Dict] = []
 
     for i in range(page_count - 1):
         # Limit the extraction to the current page and only extract text
@@ -86,37 +91,57 @@ def extract_competencies(pdf: PDFQuery):
         ]
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, "Modulnummer", "Titel", (Point(120, 0), Point(455, 1)), i))
+            selectors.append(get_selector_for_element_text(pdf, i, "Modulnummer", "Titel", (Point(120, 0), Point(455, 1)), "id"))
         except ValueError as err:
             print("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
             continue
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, "Titel", "Leistungspunkte", (Point(120,0), Point(455,1)), i))
+            selectors.append(get_selector_for_element_text(pdf, i, "Titel", "Leistungspunkte", (Point(120,0), Point(455,1)), "name"))
         except ValueError as err:
             eprint("Error parsing \"Titel\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, "Lernziele / Kompetenzen", "Voraussetzungen", (Point(120, 0), Point(455, 1)), i))
+            selectors.append(get_selector_for_element_text(pdf, i, "Lernziele / Kompetenzen", "Voraussetzungen", (Point(120, 0), Point(455, 1)), "competencies"))
         except ValueError as err:
             eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, "Voraussetzungen", "Niveaustufe", (Point(120, 0), Point(455, 1)), i))
+            selectors.append(get_selector_for_element_text(pdf, i, "Voraussetzungen", "Niveaustufe", (Point(120, 0), Point(455, 1)), "requirements"))
         except ValueError as err:
             eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 
-        page_results = pdf.extract(selectors)
+        page_results: Dict = pdf.extract(selectors)
         page_results['page'] = i + 1
         results.append(page_results)
 
     return results
 
+def write_to_conll_directory_structure(results: List[Dict], path: str):
+    folder_structure = Path(path)
+    for result in results:
+        module_folder = folder_structure / result["id"]
+
+        sentences1 = re.split("(?<!bzw)(?<!etc)(?<!ca)([.!?•])", result["competencies"])
+        sentences1 = [sentence.strip() for sentence in sentences1]
+        if not os.path.exists(module_folder):
+            os.makedirs(module_folder)
+        f = open(module_folder / "competencies.txt", "w")
+        f.writelines(sentence + '\n' for sentence in sentences1)
+        f.close()
+
+        sentences2 = re.split("(?<!bzw)(?<!etc)(?<!ca)([.!?•])", result["requirements"])
+        sentences2 = [sentence.strip() for sentence in sentences2]
+        f = open(module_folder / "requirements.txt", "w")
+        f.writelines(sentence + '\n' for sentence in sentences2)
+        f.close()
+
 def main():
     pdf = load_pdf("./testdata/test.pdf")
     results = extract_competencies(pdf)
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(results)
+    write_to_conll_directory_structure(results, "./conll")
+    # pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(results)
 
 if __name__ == "__main__":
     main()

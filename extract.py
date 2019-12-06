@@ -120,19 +120,23 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
 def write_to_conll_directory_structure(results: List[Dict], path: str):
     folder_structure = Path(path)
     for result in results:
-        module_folder = folder_structure / result["id"]
+        try:
+            escaped_name = re.sub('[^\w\-_\.]', '_', result["name"])
+        except:
+            escaped_name = "unknown"
+        module_folder = folder_structure / ("%s-%s" % (result["id"], escaped_name))
 
         sentences1 = re.split("(?<!bzw)(?<!etc)(?<!ca)([.!?•])", result["competencies"])
         sentences1 = [sentence.strip() for sentence in sentences1]
         if not os.path.exists(module_folder):
             os.makedirs(module_folder)
-        f = open(module_folder / "competencies.txt", "w")
+        f = open(module_folder / ("%s-competencies.txt" % (result["id"])), "w")
         f.writelines(sentence + '\n' for sentence in sentences1)
         f.close()
 
         sentences2 = re.split("(?<!bzw)(?<!etc)(?<!ca)([.!?•])", result["requirements"])
         sentences2 = [sentence.strip() for sentence in sentences2]
-        f = open(module_folder / "requirements.txt", "w")
+        f = open(module_folder / ("%s-requirements.txt" % (result["id"])), "w")
         f.writelines(sentence + '\n' for sentence in sentences2)
         f.close()
 

@@ -1,10 +1,16 @@
+import os
+import pprint
+
 import pdfquery
 from pdfquery.cache import FileCache
 from pdfminer.pdfinterp import resolve1
 
-import pprint
+cache_dir = "./.cache/"
 
-pdf = pdfquery.PDFQuery("./testdata/test.pdf", parse_tree_cacher=FileCache("./.cache/"))
+if not os.path.exists(cache_dir):
+    os.makedirs(cache_dir)
+
+pdf = pdfquery.PDFQuery("./testdata/test.pdf", parse_tree_cacher=FileCache(cache_dir))
 pdf.load()
 
 page_count = resolve1(pdf.doc.catalog['Pages'])['Count']

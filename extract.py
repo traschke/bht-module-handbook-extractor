@@ -138,6 +138,7 @@ def split_sentences(text: str) -> List[str]:
     split_pattern: str = r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"
     sentences = re.split(split_pattern, text)
     sentences = [sentence.strip() for sentence in sentences]
+    sentences = [re.sub(r"(?<!\s)(- )", "", sentence) for sentence in sentences]
     return sentences
 
 def write_sentences_to_file(sentences: List[str], file: str):

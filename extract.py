@@ -120,25 +120,33 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
 def write_to_conll_directory_structure(results: List[Dict], path: str):
     folder_structure = Path(path)
     for result in results:
+        # Remove any forbidden character from the filename
         try:
             escaped_name = re.sub('[^\w\-_\.]', '_', result["name"])
         except:
             escaped_name = "unknown"
         module_folder = folder_structure / ("%s-%s" % (result["id"], escaped_name))
 
-        sentences1 = re.split("(?<!bzw)(?<!etc)(?<!ca)([.!?•])", result["competencies"])
-        sentences1 = [sentence.strip() for sentence in sentences1]
-        if not os.path.exists(module_folder):
-            os.makedirs(module_folder)
-        f = open(module_folder / ("%s-competencies.txt" % (result["id"])), "w")
-        f.writelines(sentence + '\n' for sentence in sentences1)
-        f.close()
+        competencies_sentences = split_sentences(result["competencies"])
+        write_sentences_to_file(competencies_sentences, module_folder / ("%s-competencies.txt" % (result["id"])))
 
-        sentences2 = re.split("(?<!bzw)(?<!etc)(?<!ca)([.!?•])", result["requirements"])
-        sentences2 = [sentence.strip() for sentence in sentences2]
-        f = open(module_folder / ("%s-requirements.txt" % (result["id"])), "w")
-        f.writelines(sentence + '\n' for sentence in sentences2)
-        f.close()
+        requirements_sentences = split_sentences(result["requirements"])
+        write_sentences_to_file(requirements_sentences, module_folder / ("%s-requirements.txt" % (result["id"])))
+
+def split_sentences(text: str) -> List[str]:
+    split_pattern: str = "(?<!bzw)(?<!etc)(?<!ca)([.!?•])"
+    sentences = re.split(split_pattern, text)
+    sentences = [sentence.strip() for sentence in sentences]
+    return sentences
+
+def write_sentences_to_file(sentences: List[str], file: str):
+    filePath: Path = Path(file)
+    folder: Path = filePath.parent
+    if not os.path.exists(folder):
+            os.makedirs(folder)
+    f = open(filePath, "w")
+    f.writelines(sentence + '\n' for sentence in sentences)
+    f.close()
 
 def main():
     pdf = load_pdf("./testdata/test.pdf")

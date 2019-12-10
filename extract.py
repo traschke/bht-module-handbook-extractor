@@ -122,7 +122,7 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
     for result in results:
         # Remove any forbidden character from the filename
         try:
-            escaped_name = re.sub('[^\w\-_\.]', '_', result["name"])
+            escaped_name = re.sub(r"[^\w\-_\.]", "_", result["name"])
         except:
             escaped_name = "unknown"
         module_folder = folder_structure / ("%s-%s" % (result["id"], escaped_name))
@@ -134,9 +134,7 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
         write_sentences_to_file(requirements_sentences, module_folder / ("%s-requirements.txt" % (result["id"])))
 
 def split_sentences(text: str) -> List[str]:
-    # FIXME punctuation marks are separate entries
-    # FIXME false positive split with abbr "z.B."
-    split_pattern: str = "(?<!bzw)(?<!etc)(?<!ca)([.!?•])"
+    split_pattern: str = r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"
     sentences = re.split(split_pattern, text)
     sentences = [sentence.strip() for sentence in sentences]
     return sentences

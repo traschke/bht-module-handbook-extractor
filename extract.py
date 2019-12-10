@@ -2,6 +2,7 @@ import os
 import pprint
 import sys
 import re
+import argparse
 from pathlib import Path
 from typing import List, Set, Dict, Tuple, Optional
 
@@ -37,7 +38,7 @@ def load_pdf(file: str, cache_dir: str = "./.cache/") -> PDFQuery:
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
 
-    pdf = PDFQuery("./testdata/test.pdf", parse_tree_cacher=FileCache(cache_dir))
+    pdf = PDFQuery(file, parse_tree_cacher=FileCache(cache_dir))
     pdf.load()
     return pdf
 
@@ -149,11 +150,17 @@ def write_sentences_to_file(sentences: List[str], file: str):
     f.close()
 
 def main():
-    pdf = load_pdf("./testdata/test.pdf")
+    parser = argparse.ArgumentParser(description="Extracts competencies and requirements from a module handbook.")
+    parser.add_argument('pdf_file', metavar='pdf_file', type=str, nargs=1, help='the module handbook to be extracted')
+    parser.add_argument('-o', metavar='output_directory', type=str, help='directory to write the extracted data to')
+
+    args = parser.parse_args()
+
+    print(args)
+
+    pdf = load_pdf(args.pdf_file[0])
     results = extract_competencies(pdf)
-    write_to_conll_directory_structure(results, "./conll")
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(results)
+    write_to_conll_directory_structure(results, args.o)
 
 if __name__ == "__main__":
     main()

@@ -134,6 +134,8 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
         write_sentences_to_file(requirements_sentences, module_folder / ("%s-requirements.txt" % (result["id"])))
 
 def split_sentences(text: str) -> List[str]:
+    # FIXME punctuation marks are separate entries
+    # FIXME false positive split with abbr "z.B."
     split_pattern: str = "(?<!bzw)(?<!etc)(?<!ca)([.!?•])"
     sentences = re.split(split_pattern, text)
     sentences = [sentence.strip() for sentence in sentences]

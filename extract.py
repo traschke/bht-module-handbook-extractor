@@ -94,7 +94,7 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         try:
             selectors.append(get_selector_for_element_text(pdf, i, "Modulnummer", "Titel", (Point(120, 0), Point(455, 1)), "id"))
         except ValueError as err:
-            print("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
+            eprint("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
             continue
 
         try:
@@ -149,18 +149,23 @@ def write_sentences_to_file(sentences: List[str], file: str):
     f.writelines(sentence + '\n' for sentence in sentences)
     f.close()
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser(description="Extracts competencies and requirements from a module handbook.")
     parser.add_argument('pdf_file', metavar='pdf_file', type=str, nargs=1, help='the module handbook to be extracted')
     parser.add_argument('-o', metavar='output_directory', type=str, help='directory to write the extracted data to')
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    print(args)
+def main():
+    args = parse_args()
 
     pdf = load_pdf(args.pdf_file[0])
     results = extract_competencies(pdf)
-    write_to_conll_directory_structure(results, args.o)
+    if args.o is not None:
+        write_to_conll_directory_structure(results, args.o)
+    else:
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(results)
 
 if __name__ == "__main__":
     main()

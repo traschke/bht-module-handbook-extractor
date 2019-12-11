@@ -10,9 +10,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/extract.py",
             "args": [
-                "${workspaceFolder}/testdata/test.pdf",
-                "-o",
-                "./conll"
+                "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                // "-o",
+                // "./conll"
             ],
             "console": "integratedTerminal"
         },

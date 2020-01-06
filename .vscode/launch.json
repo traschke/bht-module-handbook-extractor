@@ -5,12 +5,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Extract competencies",
+            "name": "Python: Extract competencies to console",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/extract.py",
             "args": [
-                "${workspaceFolder}/testdata/test.pdf",
+                "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                // "-o",
+                // "./conll"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Extract competencies to disk",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/extract.py",
+            "args": [
+                "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
                 "-o",
                 "./conll"
             ],

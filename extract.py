@@ -47,7 +47,7 @@ def load_pdf(file: str, cache_dir: str = "./.cache/") -> PDFQuery:
 def get_page_count(pdf: PDFQuery) -> int:
     return resolve1(pdf.doc.catalog['Pages'])['Count']
 
-def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptor: str, underlaying_descriptor: str, value_deviations: (Point, Point), desc: Optional[str] = None):
+def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[str], underlaying_descriptors: Tuple[str], value_deviations: (Point, Point), desc: Optional[str] = None):
     """Extracts a text value from the given handbook based on descriptors
 
     The operation is based on a descriptor of the value to extract and an underlaying descriptor used
@@ -59,12 +59,19 @@ def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptor: str, und
     │ underlaying_descriptor │ uninteresting text       │
     └────────────────────────┴──────────────────────────┘
     """
+    for descriptor in descriptors:
+        descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, descriptor))
+        if len(descriptor_element) >= 1:
+            break
 
-    descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, descriptor))
     if len(descriptor_element) < 1:
         raise ValueError("Descriptor \"%s\" not found on page %s" % (descriptor, page + 1))
 
-    underlaying_descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, underlaying_descriptor))
+    for underlaying_descriptor in underlaying_descriptors:
+        underlaying_descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, underlaying_descriptor))
+        if len(underlaying_descriptor_element) >= 1:
+            break
+
     if len(underlaying_descriptor_element) < 1:
         raise ValueError("Underlaying descriptor \"%s\" not found on page %s" % (underlaying_descriptor, page + 1))
 
@@ -80,6 +87,7 @@ def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptor: str, und
     )
     if desc is None:
         desc = descriptor.lower()
+    print("Page %s: bbox for %s: %s, %s" % (page + 1, desc, value_coords[0], value_coords[1]))
     return (desc, 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
 
 def extract_competencies(pdf: PDFQuery) -> List[Dict]:
@@ -94,23 +102,23 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         ]
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, "Modulnummer", "Titel", (Point(120, 0), Point(455, 1)), "id"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel",), (Point(120, 0), Point(455, 1)), "id"))
         except ValueError as err:
             eprint("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
             continue
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, "Titel", "Leistungspunkte", (Point(120,0), Point(455,1)), "name"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Titel",), ("Leistungspunkte", "Credits"), (Point(120,0), Point(455,1)), "name"))
         except ValueError as err:
             eprint("Error parsing \"Titel\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, "Lernziele / Kompetenzen", "Voraussetzungen", (Point(120, 0), Point(455, 1)), "competencies"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Lernziele / Kompetenzen",), ("Voraussetzungen",), (Point(120, 0), Point(455, 1)), "competencies"))
         except ValueError as err:
             eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, "Voraussetzungen", "Niveaustufe", (Point(120, 0), Point(455, 1)), "requirements"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(120, 0), Point(455, 1)), "requirements"))
         except ValueError as err:
             eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 

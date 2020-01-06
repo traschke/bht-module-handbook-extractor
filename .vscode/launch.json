@@ -11,6 +11,7 @@
             "program": "${workspaceFolder}/extract.py",
             "args": [
                 "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                // "${workspaceFolder}/testdata/Druck-_und_Medientechnik_B.Eng.pdf",
                 // "-o",
                 // "./conll"
             ],
@@ -23,6 +24,7 @@
             "program": "${workspaceFolder}/extract.py",
             "args": [
                 "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                // "${workspaceFolder}/testdata/Druck-_und_Medientechnik_B.Eng.pdf",
                 "-o",
                 "./conll"
             ],

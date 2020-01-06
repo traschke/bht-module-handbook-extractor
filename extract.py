@@ -87,7 +87,7 @@ def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[s
     )
     if desc is None:
         desc = descriptor.lower()
-    print("Page %s: bbox for %s: %s, %s" % (page + 1, desc, value_coords[0], value_coords[1]))
+    # print("Page %s: bbox for %s: %s, %s" % (page + 1, desc, value_coords[0], value_coords[1]))
     return (desc, 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
 
 def extract_competencies(pdf: PDFQuery) -> List[Dict]:

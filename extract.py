@@ -102,23 +102,23 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         ]
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel",), (Point(120, 0), Point(455, 1)), "id"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel",), (Point(120, 0), Point(490, 1)), "id"))
         except ValueError as err:
             eprint("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
             continue
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Titel",), ("Leistungspunkte", "Credits"), (Point(120,0), Point(455,1)), "name"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Titel",), ("Leistungspunkte", "Credits"), (Point(120,0), Point(490,1)), "name"))
         except ValueError as err:
             eprint("Error parsing \"Titel\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Lernziele / Kompetenzen",), ("Voraussetzungen",), (Point(120, 0), Point(455, 1)), "competencies"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Lernziele / Kompetenzen","Lernziele/Kompetenzen"), ("Voraussetzungen",), (Point(120, 0), Point(490, 1)), "competencies"))
         except ValueError as err:
             eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(120, 0), Point(455, 1)), "requirements"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(120, 0), Point(490, 1)), "requirements"))
         except ValueError as err:
             eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 

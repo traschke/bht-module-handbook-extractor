@@ -59,7 +59,6 @@ def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[s
     │ underlaying_descriptor │ uninteresting text       │
     └────────────────────────┴──────────────────────────┘
     """
-    # FIXME Produces completely different bboxes than old logic. But why?
     for descriptor in descriptors:
         descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, descriptor))
         if len(descriptor_element) >= 1:
@@ -103,7 +102,7 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         ]
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel"), (Point(120, 0), Point(455, 1)), "id"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel",), (Point(120, 0), Point(455, 1)), "id"))
         except ValueError as err:
             eprint("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
             continue
@@ -119,7 +118,7 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
             eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, "Voraussetzungen", "Niveaustufe", (Point(120, 0), Point(455, 1)), "requirements"))
+            selectors.append(get_selector_for_element_text(pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(120, 0), Point(455, 1)), "requirements"))
         except ValueError as err:
             eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 

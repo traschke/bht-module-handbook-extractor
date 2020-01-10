@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/extract.py",
             "args": [
-                "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                // "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
                 // "${workspaceFolder}/testdata/Druck-_und_Medientechnik_B.Eng.pdf",
                 // "-o",
                 // "./conll"
@@ -23,7 +24,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/extract.py",
             "args": [
-                "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                // "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
+                "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
                 // "${workspaceFolder}/testdata/Druck-_und_Medientechnik_B.Eng.pdf",
                 "-o",
                 "./conll"

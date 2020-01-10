@@ -126,6 +126,9 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         page_results['page'] = i + 1
         results.append(page_results)
 
+    for result in results:
+        result["competencies"] = split_sentences(result["competencies"])
+        result["requirements"] = split_sentences(result["requirements"])
     return results
 
 def write_to_conll_directory_structure(results: List[Dict], path: str):
@@ -138,11 +141,11 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
             escaped_name = "unknown"
         module_folder = folder_structure / ("%s-%s" % (result["id"], escaped_name))
 
-        competencies_sentences = split_sentences(result["competencies"])
-        write_sentences_to_file(competencies_sentences, module_folder / ("%s-competencies.txt" % (result["id"])))
+        # competencies_sentences = split_sentences(result["competencies"])
+        write_sentences_to_file(result["competencies"], module_folder / ("%s-competencies.txt" % (result["id"])))
 
-        requirements_sentences = split_sentences(result["requirements"])
-        write_sentences_to_file(requirements_sentences, module_folder / ("%s-requirements.txt" % (result["id"])))
+        # requirements_sentences = split_sentences(result["requirements"])
+        write_sentences_to_file(result["requirements"], module_folder / ("%s-requirements.txt" % (result["id"])))
 
 def split_sentences(text: str) -> List[str]:
     split_pattern: str = r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"

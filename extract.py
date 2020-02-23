@@ -156,7 +156,7 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
 
 def split_sentences(text: str) -> List[str]:
     # Split sentences at . ! or ?, but not if its preceeded by a number or an abbrevation like z.B. oder etc.
-    split_pattern: str = r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"
+    split_pattern: str = r"(?<!\w\.\w.)(?<!etc\.|bzw\.|usw\.|uvm\.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"
     sentences = re.split(split_pattern, text)
     sentences = [sentence.strip() for sentence in sentences]
 

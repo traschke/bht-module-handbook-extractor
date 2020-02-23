@@ -138,6 +138,9 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
 
         results.append(page_results)
 
+    for result in results:
+        result["competencies"] = split_sentences(result["competencies"])
+        result["requirements"] = split_sentences(result["requirements"])
     return results
 
 def write_to_conll_directory_structure(results: List[Dict], path: str):

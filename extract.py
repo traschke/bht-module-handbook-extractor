@@ -101,29 +101,41 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
             ('with_formatter', 'text'),
         ]
 
+        # Try to find a "Modulnummer" on that page. If there is none, then it's not a module-description page.
         try:
             selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel",), (Point(120, 0), Point(490, 1)), "id"))
         except ValueError as err:
             eprint("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
             continue
 
+        # Find the module title
         try:
             selectors.append(get_selector_for_element_text(pdf, i, ("Titel",), ("Leistungspunkte", "Credits"), (Point(120,0), Point(490,1)), "name"))
         except ValueError as err:
             eprint("Error parsing \"Titel\": %s" % (err))
 
+        # Find the module competencies
         try:
             selectors.append(get_selector_for_element_text(pdf, i, ("Lernziele / Kompetenzen","Lernziele/Kompetenzen"), ("Voraussetzungen",), (Point(120, 0), Point(490, 1)), "competencies"))
         except ValueError as err:
             eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
+        # Find the module requirements
         try:
             selectors.append(get_selector_for_element_text(pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(120, 0), Point(490, 1)), "requirements"))
         except ValueError as err:
             eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 
+        # Do the extraction
         page_results: Dict = pdf.extract(selectors)
+
+        # Add the pagenumber for convenience reasons
         page_results['page'] = i + 1
+
+        # Split the extracted sentences
+        page_results['competencies'] = split_sentences(page_results['competencies'])
+        page_results['requirements'] = split_sentences(page_results['requirements'])
+
         results.append(page_results)
 
     return results
@@ -138,18 +150,19 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
             escaped_name = "unknown"
         module_folder = folder_structure / ("%s-%s" % (result["id"], escaped_name))
 
-        competencies_sentences = split_sentences(result["competencies"])
-        write_sentences_to_file(competencies_sentences, module_folder / ("%s-competencies.txt" % (result["id"])))
-
-        requirements_sentences = split_sentences(result["requirements"])
-        write_sentences_to_file(requirements_sentences, module_folder / ("%s-requirements.txt" % (result["id"])))
+        # Write competencies and requirements to specific files
+        write_sentences_to_file(result["competencies"], module_folder / ("%s-competencies.txt" % (result["id"])))
+        write_sentences_to_file(result["requirements"], module_folder / ("%s-requirements.txt" % (result["id"])))
 
 def split_sentences(text: str) -> List[str]:
+    # Split sentences at . ! or ?, but not if its preceeded by a number or an abbrevation like z.B. oder etc.
     split_pattern: str = r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"
     sentences = re.split(split_pattern, text)
     sentences = [sentence.strip() for sentence in sentences]
+
     # remove weird looking hyphenated words like "Fer- tigkeit"
     sentences = [re.sub(r"(?<!\s)(- )", "", sentence) for sentence in sentences]
+
     return sentences
 
 def write_sentences_to_file(sentences: List[str], file: str):

@@ -132,7 +132,11 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         # Add the pagenumber for convenience reasons
         page_results['page'] = i + 1
 
-        # Split the extracted sentences
+        # Trim extrated text
+        page_results['id'] = page_results['id'].strip()
+        page_results['name'] = page_results['name'].strip()
+
+        # Split the extracted sentences (which also does a trim to each sentence)
         page_results['competencies'] = split_sentences(page_results['competencies'])
         page_results['requirements'] = split_sentences(page_results['requirements'])
 
@@ -140,19 +144,24 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
 
     return results
 
+def escape_filename(input: str) -> str:
+    output = re.sub(r"[^\w\-_\.]", "_", input)
+    return output
+
 def write_to_conll_directory_structure(results: List[Dict], path: str):
     folder_structure = Path(path)
     for result in results:
         # Remove any forbidden character from the filename
         try:
-            escaped_name = re.sub(r"[^\w\-_\.]", "_", result["name"])
+            escaped_name = escape_filename(result["name"])
         except:
             escaped_name = "unknown"
-        module_folder = folder_structure / ("%s-%s" % (result["id"], escaped_name))
+        escaped_id = escape_filename(result["id"])
+        module_folder = folder_structure / ("%s-%s" % (escaped_id, escaped_name))
 
         # Write competencies and requirements to specific files
-        write_sentences_to_file(result["competencies"], module_folder / ("%s-competencies.txt" % (result["id"])))
-        write_sentences_to_file(result["requirements"], module_folder / ("%s-requirements.txt" % (result["id"])))
+        write_sentences_to_file(result["competencies"], module_folder / ("%s-competencies.txt" % (escaped_id)))
+        write_sentences_to_file(result["requirements"], module_folder / ("%s-requirements.txt" % (escaped_id)))
 
 def split_sentences(text: str) -> List[str]:
     # Split sentences at . ! or ?, but not if its preceeded by a number or an abbrevation like z.B. oder etc.
@@ -162,6 +171,7 @@ def split_sentences(text: str) -> List[str]:
 
     # remove weird looking hyphenated words like "Fer- tigkeit"
     sentences = [re.sub(r"(?<!\s)(- )", "", sentence) for sentence in sentences]
+    sentences = [sentence.strip() for sentence in sentences]
 
     return sentences
 

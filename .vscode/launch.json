@@ -8,7 +8,7 @@
             "name": "Python: Extract competencies to console",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/extract.py",
+            "program": "${workspaceFolder}/pdfextract/__main__.py",
             "args": [
                 // "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
                 "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
@@ -16,13 +16,16 @@
                 // "-o",
                 // "./conll"
             ],
+            "env": {
+                "PYTHONPATH":"${workspaceRoot}",
+            },
             "console": "integratedTerminal"
         },
         {
             "name": "Python: Extract competencies to disk",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/extract.py",
+            "program": "${workspaceFolder}/pdfextract/__main__.py",
             "args": [
                 // "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
                 "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
@@ -30,6 +33,9 @@
                 "-o",
                 "./conll"
             ],
+            "env": {
+                "PYTHONPATH":"${workspaceRoot}",
+            },
             "console": "integratedTerminal"
         },
         {

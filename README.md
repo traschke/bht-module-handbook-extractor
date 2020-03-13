@@ -1,6 +1,6 @@
 # Module Handbook Extractor
 
-Extract text from modulehandbooks. Currently only handles descriptions of competencies and requirements, but can easily be extended for other puposes!
+Extracts text from module handbooks. Currently only handles descriptions of competencies and requirements, but can easily be extended for other puposes!
 (only tested with modulehandbooks of Department VI of Beuth University of Applied Sciences Berlin)
 
 ## How does it work?

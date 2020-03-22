@@ -11,7 +11,8 @@
             "program": "${workspaceFolder}/pdfextract/__main__.py",
             "args": [
                 // "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
-                "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
+                // "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
+                "${workspaceFolder}/testdata/Screen_Based_Media_BA.pdf",
                 // "${workspaceFolder}/testdata/Druck-_und_Medientechnik_B.Eng.pdf",
                 // "-o",
                 // "./conll"
@@ -28,10 +29,11 @@
             "program": "${workspaceFolder}/pdfextract/__main__.py",
             "args": [
                 // "${workspaceFolder}/testdata/Medieninformatik_BSc.pdf",
-                "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
+                // "${workspaceFolder}/testdata/Medieninformatik_MSc.pdf",
+                "${workspaceFolder}/testdata/Screen_Based_Media_BA.pdf",
                 // "${workspaceFolder}/testdata/Druck-_und_Medientechnik_B.Eng.pdf",
                 "-o",
-                "./conll"
+                "./outor"
             ],
             "env": {
                 "PYTHONPATH":"${workspaceRoot}",

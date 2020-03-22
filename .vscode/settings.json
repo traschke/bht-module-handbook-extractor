@@ -1,0 +1,7 @@
+{
+    "python.pythonPath": "/home/timo/.local/share/virtualenvs/bht_module_handbook_extractor-xCBX_38-/bin/python",
+    "autoDocstring.docstringFormat": "numpy",
+    "python.formatting.autopep8Args": [
+        "--aggressive"
+    ]
+}

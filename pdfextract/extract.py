@@ -10,6 +10,7 @@ from pdfquery import PDFQuery
 from pdfquery.cache import FileCache
 from pdfminer.pdfinterp import resolve1
 
+
 class Point(object):
     """Represents a two-dimensional point."""
 
@@ -56,10 +57,12 @@ class Point(object):
         """
         return self.data[1]
 
+
 def eprint(*args, **kwargs):
     """Prints text to stderr
     """
     print(*args, file=sys.stderr, **kwargs)
+
 
 def load_pdf(file: str, cache_dir: str = "./.cache/") -> PDFQuery:
     """Loads and parses a PDF file with pdfquery.
@@ -83,6 +86,7 @@ def load_pdf(file: str, cache_dir: str = "./.cache/") -> PDFQuery:
     pdf.load()
     return pdf
 
+
 def get_page_count(pdf: PDFQuery) -> int:
     """Get the total page count of a PDF.
 
@@ -99,7 +103,9 @@ def get_page_count(pdf: PDFQuery) -> int:
 
     return resolve1(pdf.doc.catalog['Pages'])['Count']
 
-def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[str], underlying_descriptors: Tuple[str], value_deviations: (Point, Point), desc: Optional[str] = None):
+
+def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[str], underlying_descriptors: Tuple[str], value_deviations: (
+        Point, Point), desc: Optional[str] = None):
     """Extracts a text value from the given handbook based on descriptors
 
     The operation is based on a descriptor of the value to extract and an underlying descriptor used
@@ -140,25 +146,34 @@ def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[s
     """
 
     for descriptor in descriptors:
-        descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, descriptor))
+        descriptor_element = pdf.pq(
+            'LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' %
+            (page, descriptor))
         if len(descriptor_element) >= 1:
             break
 
     if len(descriptor_element) < 1:
-        raise ValueError("Descriptor \"%s\" not found on page %s" % (descriptor, page + 1))
+        raise ValueError(
+            "Descriptor \"%s\" not found on page %s" %
+            (descriptor, page + 1))
 
     for underlaying_descriptor in underlying_descriptors:
-        underlaying_descriptor_element = pdf.pq('LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' % (page, underlaying_descriptor))
+        underlaying_descriptor_element = pdf.pq(
+            'LTPage[page_index="%s"] LTTextLineHorizontal:contains("%s")' %
+            (page, underlaying_descriptor))
         if len(underlaying_descriptor_element) >= 1:
             break
 
     if len(underlaying_descriptor_element) < 1:
-        raise ValueError("Underlaying descriptor \"%s\" not found on page %s" % (underlaying_descriptor, page + 1))
+        raise ValueError(
+            "Underlaying descriptor \"%s\" not found on page %s" %
+            (underlaying_descriptor, page + 1))
 
     value_coords = (
         Point(
             float(descriptor_element.attr('x0')) + value_deviations[0].x,
-            float(underlaying_descriptor_element.attr('y1')) + value_deviations[0].y
+            float(underlaying_descriptor_element.attr('y1')) +
+            value_deviations[0].y
         ),
         Point(
             float(descriptor_element.attr('x0')) + value_deviations[1].x,
@@ -168,7 +183,9 @@ def get_selector_for_element_text(pdf: PDFQuery, page: int, descriptors: Tuple[s
     if desc is None:
         desc = descriptor.lower()
 
-    return (desc, 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
+    return (desc, 'LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (
+        value_coords[0].x, value_coords[0].y, value_coords[1].x, value_coords[1].y), lambda match: match.text().strip())
+
 
 def extract_competencies(pdf: PDFQuery) -> List[Dict]:
     """Extracts Lernziele/Kompetenzen and Voraussetzungen from BHT modulehandbooks.
@@ -190,32 +207,61 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
     for i in range(page_count - 1):
         # Limit the extraction to the current page and only extract text
         selectors = [
-            ('with_parent','LTPage[page_index="%s"]' % (i)),
+            ('with_parent', 'LTPage[page_index="%s"]' % (i)),
             ('with_formatter', 'text'),
         ]
 
-        # Try to find a "Modulnummer" on that page. If there is none, then it's not a module-description page.
+        # Try to find a "Modulnummer" on that page. If there is none, then it's
+        # not a module-description page.
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Modulnummer",), ("Titel",), (Point(120, 0), Point(490, 1)), "id"))
+            selectors.append(
+                get_selector_for_element_text(
+                    pdf, i, ("Modulnummer",), ("Titel",), (Point(
+                        120, 0), Point(
+                        490, 1)), "id"))
         except ValueError as err:
-            eprint("No \"Modulnummer\" found on page %s, skipping..." % (i + 1))
+            eprint(
+                "No \"Modulnummer\" found on page %s, skipping..." %
+                (i + 1))
             continue
 
         # Find the module title
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Titel",), ("Leistungspunkte", "Credits"), (Point(120,0), Point(490,1)), "name"))
+            selectors.append(
+                get_selector_for_element_text(
+                    pdf, i, ("Titel",), ("Leistungspunkte", "Credits"), (Point(
+                        120, 0), Point(
+                        490, 1)), "name"))
         except ValueError as err:
             eprint("Error parsing \"Titel\": %s" % (err))
 
         # Find the module competencies
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Lernziele / Kompetenzen","Lernziele/Kompetenzen"), ("Voraussetzungen",), (Point(120, 0), Point(490, 1)), "competencies"))
+            selectors.append(
+                get_selector_for_element_text(
+                    pdf,
+                    i,
+                    ("Lernziele / Kompetenzen",
+                     "Lernziele/Kompetenzen"),
+                    ("Voraussetzungen",
+                     ),
+                    (Point(
+                        120,
+                        0),
+                        Point(
+                        490,
+                        1)),
+                    "competencies"))
         except ValueError as err:
             eprint("Error parsing \"Lernziele / Kompetenzen\": %s" % (err))
 
         # Find the module requirements
         try:
-            selectors.append(get_selector_for_element_text(pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(120, 0), Point(490, 1)), "requirements"))
+            selectors.append(
+                get_selector_for_element_text(
+                    pdf, i, ("Voraussetzungen",), ("Niveaustufe",), (Point(
+                        120, 0), Point(
+                        490, 1)), "requirements"))
         except ValueError as err:
             eprint("Error parsing \"Voraussetzungen\": %s" % (err))
 
@@ -229,13 +275,17 @@ def extract_competencies(pdf: PDFQuery) -> List[Dict]:
         page_results['id'] = page_results['id'].strip()
         page_results['name'] = page_results['name'].strip()
 
-        # Split the extracted sentences (which also does a trim to each sentence)
-        page_results['competencies'] = split_sentences(page_results['competencies'])
-        page_results['requirements'] = split_sentences(page_results['requirements'])
+        # Split the extracted sentences (which also does a trim to each
+        # sentence)
+        page_results['competencies'] = split_sentences(
+            page_results['competencies'])
+        page_results['requirements'] = split_sentences(
+            page_results['requirements'])
 
         results.append(page_results)
 
     return results
+
 
 def escape_filename(input: str) -> str:
     """Remove forbidden chars from a string.
@@ -254,6 +304,7 @@ def escape_filename(input: str) -> str:
     output = re.sub(r"[^\w\-_\.]", "_", input)
     return output
 
+
 def write_to_conll_directory_structure(results: List[Dict], path: str):
     """Writes extracted data to files.
 
@@ -270,14 +321,18 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
         # Remove any forbidden character from the filename
         try:
             escaped_name = escape_filename(result["name"])
-        except:
+        except BaseException:
             escaped_name = "unknown"
         escaped_id = escape_filename(result["id"])
-        module_folder = folder_structure / ("%s-%s" % (escaped_id, escaped_name))
+        module_folder = folder_structure / \
+            ("%s-%s" % (escaped_id, escaped_name))
 
         # Write competencies and requirements to specific files
-        write_sentences_to_file(result["competencies"], module_folder / ("%s-competencies.txt" % (escaped_id)))
-        write_sentences_to_file(result["requirements"], module_folder / ("%s-requirements.txt" % (escaped_id)))
+        write_sentences_to_file(
+            result["competencies"], module_folder / ("%s-competencies.txt" % (escaped_id)))
+        write_sentences_to_file(
+            result["requirements"], module_folder / ("%s-requirements.txt" % (escaped_id)))
+
 
 def split_sentences(text: str) -> List[str]:
     """Splits sentences.
@@ -292,16 +347,19 @@ def split_sentences(text: str) -> List[str]:
     List[str]
         A List of sentences
     """
-    # Split sentences at . ! or ?, but not if its preceeded by a number or an abbrevation like z.B. oder etc.
+    # Split sentences at . ! or ?, but not if its preceeded by a number or an
+    # abbrevation like z.B. oder etc.
     split_pattern: str = r"(?<!\w\.\w.)(?<!etc\.|bzw\.|usw\.|uvm\.)(?<![A-Z][a-z]\.)(?<![0-9]\.)(?<=\.|\?|\!)\s"
     sentences = re.split(split_pattern, text)
     sentences = [sentence.strip() for sentence in sentences]
 
     # remove weird looking hyphenated words like "Fer- tigkeit"
-    sentences = [re.sub(r"(?<!\s)(- )", "", sentence) for sentence in sentences]
+    sentences = [re.sub(r"(?<!\s)(- )", "", sentence)
+                 for sentence in sentences]
     sentences = [sentence.strip() for sentence in sentences]
 
     return sentences
+
 
 def write_sentences_to_file(sentences: List[str], file: str):
     """Writes a list of sentences to a files. One sentence per line.
@@ -317,7 +375,7 @@ def write_sentences_to_file(sentences: List[str], file: str):
     filePath: Path = Path(file)
     folder: Path = filePath.parent
     if not os.path.exists(folder):
-            os.makedirs(folder)
+        os.makedirs(folder)
     f = open(filePath, "w")
     f.writelines(sentence + '\n' for sentence in sentences)
     f.close()

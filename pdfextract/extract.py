@@ -324,14 +324,14 @@ def write_to_conll_directory_structure(results: List[Dict], path: str):
         except BaseException:
             escaped_name = "unknown"
         escaped_id = escape_filename(result["id"])
-        module_folder = folder_structure / \
-            ("%s-%s" % (escaped_id, escaped_name))
+        # module_folder = folder_structure / \
+        #     ("%s-%s" % (escaped_id, escaped_name))
 
         # Write competencies and requirements to specific files
         write_sentences_to_file(
-            result["competencies"], module_folder / ("%s-competencies.txt" % (escaped_id)))
+            result["competencies"], folder_structure / ("%s-%s-competencies.txt" % (escaped_id, escaped_name)))
         write_sentences_to_file(
-            result["requirements"], module_folder / ("%s-requirements.txt" % (escaped_id)))
+            result["requirements"], folder_structure / ("%s-%s-requirements.txt" % (escaped_id, escaped_name)))
 
 
 def split_sentences(text: str) -> List[str]:
